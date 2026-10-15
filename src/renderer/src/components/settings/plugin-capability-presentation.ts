@@ -37,6 +37,11 @@ export function pluginCapabilityDescription(kind: string, fallback: string): str
         'auto.components.settings.PluginConsentDialog.capability.settingsOwn',
         "Read and change the plugin's own settings"
       )
+    case 'editor:languageFeatures':
+      return translate(
+        'auto.components.settings.PluginConsentDialog.capability.editorLanguageFeatures',
+        'Receive the path, text, and cursor position of code you hover or navigate in the editor'
+      )
     default:
       return fallback
   }

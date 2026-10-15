@@ -65,6 +65,7 @@ export type PluginListEntry = {
     keybindings: { key: string; when: 'global' | 'worktree' }[]
   }[]
   hasWorker: boolean
+  languageFeatures: { command: string; languages: string[] }[]
   vmRecipes: {
     id: string
     name: string
@@ -114,6 +115,7 @@ export async function buildPluginList(
           panels: [],
           commands: [],
           hasWorker: false,
+          languageFeatures: [],
           vmRecipes: [],
           restarts: 0
         }
@@ -185,6 +187,7 @@ export async function buildPluginList(
           keybindings: command.keybindings
         })),
         hasWorker: Boolean(plugin.manifest.main),
+        languageFeatures: plugin.manifest.contributes.languageFeatures,
         vmRecipes: service.contentPacks.vmRecipes.preview(plugin.pluginKey).map(({ recipe }) => ({
           id: recipe.id,
           name: recipe.name,
