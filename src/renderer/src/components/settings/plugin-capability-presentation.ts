@@ -40,7 +40,7 @@ export function pluginCapabilityDescription(kind: string, fallback: string): str
     case 'editor:languageFeatures':
       return translate(
         'auto.components.settings.PluginConsentDialog.capability.editorLanguageFeatures',
-        'Receive the path, text, and cursor position of code you hover or navigate in the editor'
+        'Receive the path, full contents (including unsaved edits), and cursor position of files you hover or navigate in the editor'
       )
     default:
       return fallback

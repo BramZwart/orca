@@ -43,7 +43,7 @@ export const PLUGIN_CAPABILITY_DESCRIPTIONS: Record<PluginCapabilityKind, string
     'Get notified when worktrees are created or removed and when agent status changes',
   'settings:own': "Read and change the plugin's own settings",
   'editor:languageFeatures':
-    'Receive the path, text, and cursor position of code you hover or navigate in the editor'
+    'Receive the path, full contents (including unsaved edits), and cursor position of files you hover or navigate in the editor'
 }
 
 /**
