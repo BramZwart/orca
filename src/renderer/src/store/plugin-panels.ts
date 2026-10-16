@@ -174,6 +174,7 @@ export function collectInstalledPluginTabKeys(
   return new Set(plugins.flatMap((plugin) => plugin.panels.map((panel) => panel.tabKey)))
 }
 
+/** Palette commands of enabled plugins, excluding language-feature endpoints. */
 export function collectActivePluginCommands(
   plugins: readonly PluginHostListEntry[]
 ): ActivePluginCommand[] {
@@ -237,11 +238,12 @@ export function useEditablePluginCommands(): ActivePluginCommand[] {
   return useMemo(() => collectEditablePluginCommands(plugins), [plugins])
 }
 
-// Why: language-feature commands are editor RPC endpoints, not user actions; keep them out of the palette.
+/** Why: language-feature commands are editor RPC endpoints, not user actions; keep them out of the palette. */
 function isLanguageFeatureCommand(plugin: PluginHostListEntry, commandId: string): boolean {
   return (plugin.languageFeatures ?? []).some((feature) => feature.command === commandId)
 }
 
+/** Language-feature contributions of running plugins granted `editor:languageFeatures`. */
 export function collectActivePluginLanguageFeatures(
   plugins: readonly PluginHostListEntry[]
 ): ActivePluginLanguageFeature[] {

@@ -19,12 +19,13 @@ const locationSchema = z.object({
 export type PluginHover = z.infer<typeof hoverSchema>
 export type PluginLocation = z.infer<typeof locationSchema>
 
-// Why: plugin replies are untrusted; malformed ranges would throw inside Monaco's providers.
+/** A plugin hover reply, or null when malformed. Why: replies are untrusted and bad ranges throw in Monaco. */
 export function parseHover(value: unknown): PluginHover | null {
   const parsed = hoverSchema.safeParse(value)
   return parsed.success ? parsed.data : null
 }
 
+/** The well-formed entries of a plugin location reply; anything else is dropped. */
 export function parseLocations(value: unknown): PluginLocation[] {
   if (!Array.isArray(value)) {
     return []

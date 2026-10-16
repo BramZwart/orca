@@ -44,6 +44,7 @@ function findEditTab(filePath: string): OpenFile | undefined {
     .openFiles.find((file) => file.mode === 'edit' && file.filePath === filePath)
 }
 
+/** Calls the plugin's worker command; failures resolve to null so the editor shows nothing. */
 async function askPlugin(
   feature: ActivePluginLanguageFeature,
   method: LanguageMethod,
@@ -72,6 +73,7 @@ async function askPlugin(
   }
 }
 
+/** Maps plugin locations to Monaco locations, dropping targets outside the source workspace. */
 function createLocationMapper(
   monaco: MonacoApi
 ): (
@@ -80,8 +82,8 @@ function createLocationMapper(
 ) => Promise<Monaco.languages.Location[]> {
   const peekModels: Monaco.editor.ITextModel[] = []
 
-  // Why: peek widgets and Cmd-hover previews resolve targets through Monaco's model registry,
-  // so cross-file targets need a model or they render empty.
+  /** Why a model: peek widgets and Cmd-hover previews resolve targets through Monaco's model
+   *  registry, so cross-file targets need one or they render empty. */
   async function uriFor(
     source: Monaco.editor.ITextModel,
     tab: OpenFile,
@@ -150,6 +152,7 @@ function createLocationMapper(
   }
 }
 
+/** Monaco passes either a range or a position to editor openers. */
 function positionOf(selectionOrPosition: Monaco.IRange | Monaco.IPosition | undefined): {
   line: number
   column: number
@@ -204,6 +207,7 @@ function openInOrcaEditor(
   return true
 }
 
+/** Toggles Monaco's single-file TS hover/definition/references for one language. */
 function setBuiltInNavigation(language: string, enabled: boolean): void {
   const defaults = BUILT_IN_DEFAULTS[language]
   if (!defaults || defaults.modeConfiguration.hovers === enabled) {
@@ -227,6 +231,7 @@ export function installPluginLanguageFeatures(monaco: MonacoApi): () => void {
   let registrations: Monaco.IDisposable[] = []
   let appliedKey = ''
 
+  /** Re-registers providers only when the active contributions actually changed. */
   const apply = (features: ActivePluginLanguageFeature[]): void => {
     const key = JSON.stringify(features)
     if (key === appliedKey) {

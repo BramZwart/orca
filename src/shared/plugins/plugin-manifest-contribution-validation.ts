@@ -41,6 +41,7 @@ function rejectDuplicateValues(
   }
 }
 
+/** Cross-field manifest checks: references between contributions and the capabilities they require. */
 export function validatePluginManifestContributions(
   manifest: ContributionValidationManifest,
   ctx: RefinementCtx

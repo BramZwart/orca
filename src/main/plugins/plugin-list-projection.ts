@@ -83,6 +83,7 @@ export type PluginListEntry = {
   }
 }
 
+/** Projects installed plugins into the list the renderer and paired clients consume. */
 export async function buildPluginList(
   service: PluginService,
   lock: PluginLockfile

@@ -1,5 +1,6 @@
 import { translate } from '@/i18n/i18n'
 
+/** Localized consent text for a capability kind, or `fallback` for unknown kinds. */
 export function pluginCapabilityDescription(kind: string, fallback: string): string {
   switch (kind) {
     case 'workspace:read':
