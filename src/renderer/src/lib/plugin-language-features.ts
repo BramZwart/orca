@@ -137,7 +137,10 @@ export function createLocationMapper(
     if (content === null) {
       // Unreadable target: navigation still works through the editor opener, only the preview is empty.
       if (existing) {
-        peekModels.splice(peekModels.indexOf(existing), 1)
+        peekModels.splice(peekModels.indexOf(existing), 1)const index = peekModels.indexOf(existing)
+        if (index !== -1) {
+          peekModels.splice(index, 1)
+        }
         existing.dispose()
       }
       return uri
