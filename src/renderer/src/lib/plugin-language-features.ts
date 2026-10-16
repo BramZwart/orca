@@ -74,7 +74,7 @@ async function askPlugin(
 }
 
 /** Maps plugin locations to Monaco locations, dropping targets outside the source workspace. */
-function createLocationMapper(
+export function createLocationMapper(
   monaco: MonacoApi
 ): (
   source: Monaco.editor.ITextModel,
@@ -82,20 +82,22 @@ function createLocationMapper(
 ) => Promise<Monaco.languages.Location[]> {
   const peekModels: Monaco.editor.ITextModel[] = []
 
-  /** Why a model: peek widgets and Cmd-hover previews resolve targets through Monaco's model
-   *  registry, so cross-file targets need one or they render empty. */
-  async function uriFor(
-    source: Monaco.editor.ITextModel,
+  /** Current target text: the live editor model when the file is open (unsaved edits), else a fresh read. */
+  async function readTarget(
     tab: OpenFile,
     filePath: string,
     relativePath: string
-  ): Promise<Monaco.Uri> {
-    if (source.uri.fsPath === filePath) {
-      return source.uri
-    }
-    const uri = monaco.Uri.file(filePath).with({ fragment: PEEK_MODEL_FRAGMENT })
-    if (monaco.editor.getModel(uri)) {
-      return uri
+  ): Promise<string | null> {
+    const live = monaco.editor
+      .getModels()
+      .find(
+        (model) =>
+          model.uri.scheme === 'file' &&
+          model.uri.fragment !== PEEK_MODEL_FRAGMENT &&
+          model.uri.fsPath === filePath
+      )
+    if (live) {
+      return live.getValue()
     }
     // Why: read through the source tab's host so SSH and paired-runtime targets come from the right machine.
     const target = getRuntimeTargetForFileOwner(
@@ -104,7 +106,7 @@ function createLocationMapper(
       tab.runtimeEnvironmentId
     )
     if (!target) {
-      return uri
+      return null
     }
     try {
       const file = await readRuntimeFileContent({
@@ -115,14 +117,40 @@ function createLocationMapper(
         connectionId: getConnectionIdForFile(tab.worktreeId, tab.filePath) ?? undefined,
         expectedExternalSshTargetId: tab.externalSshTargetId
       })
-      if (!file.isBinary && !monaco.editor.getModel(uri)) {
-        peekModels.push(monaco.editor.createModel(file.content, detectLanguage(filePath), uri))
-        if (peekModels.length > PEEK_MODEL_LIMIT) {
-          peekModels.shift()?.dispose()
-        }
-      }
+      return file.isBinary ? null : file.content
     } catch {
+      return null
+    }
+  }
+
+  /** Why a model: peek widgets and Cmd-hover previews resolve targets through Monaco's model
+   *  registry, so cross-file targets need one or they render empty. Refreshed on every request
+   *  so a returned range never lands on stale text. */
+  async function uriFor(
+    tab: OpenFile,
+    filePath: string,
+    relativePath: string
+  ): Promise<Monaco.Uri> {
+    const uri = monaco.Uri.file(filePath).with({ fragment: PEEK_MODEL_FRAGMENT })
+    const content = await readTarget(tab, filePath, relativePath)
+    const existing = monaco.editor.getModel(uri)
+    if (content === null) {
       // Unreadable target: navigation still works through the editor opener, only the preview is empty.
+      if (existing) {
+        peekModels.splice(peekModels.indexOf(existing), 1)
+        existing.dispose()
+      }
+      return uri
+    }
+    if (existing) {
+      if (existing.getValue() !== content) {
+        existing.setValue(content)
+      }
+      return uri
+    }
+    peekModels.push(monaco.editor.createModel(content, detectLanguage(filePath), uri))
+    if (peekModels.length > PEEK_MODEL_LIMIT) {
+      peekModels.shift()?.dispose()
     }
     return uri
   }
@@ -131,6 +159,13 @@ function createLocationMapper(
     const tab = findEditTab(source.uri.fsPath)
     if (!tab) {
       return []
+    }
+    // Why: references often hit one file many times; read each target once per request.
+    const uris = new Map<string, Promise<Monaco.Uri>>()
+    const uriOnce = (filePath: string, relativePath: string): Promise<Monaco.Uri> => {
+      const pending = uris.get(filePath) ?? uriFor(tab, filePath, relativePath)
+      uris.set(filePath, pending)
+      return pending
     }
     const resolved = await Promise.all(
       locations.map(async (location) => {
@@ -142,7 +177,7 @@ function createLocationMapper(
           ? []
           : [
               {
-                uri: await uriFor(source, tab, location.filePath, relativePath),
+                uri: await uriOnce(location.filePath, relativePath),
                 range: location.range
               }
             ]
